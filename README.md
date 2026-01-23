@@ -176,12 +176,36 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Author
 
+**Moritz End**  
+University of Applied Sciences Cologne  
+Cologne Institute for Renewable Energy (CIRE)
+
 Developed for hydrogen production modeling and renewable energy research.
 
 ## Citation
 
 If you use this library in your research, please cite:
 
+```bibtex
+@article{End2024,
+  author = {End, Moritz},
+  title = {Simulation einer effizienten Betriebsstrategie für systemdienliche PEM-Elektrolyse / Simulation of an efficient operating strategy for system-supporting PEM electrolysis},
+  journal = {e \& i Elektrotechnik und Informationstechnik},
+  volume = {141},
+  number = {3},
+  year = {2024},
+  month = {August},
+  doi = {10.1007/s00502-024-01230-z},
+  url = {https://doi.org/10.1007/s00502-024-01230-z}
+}
+```
+
+**Publication:**  
+End, M. (2024). Simulation einer effizienten Betriebsstrategie für systemdienliche PEM-Elektrolyse.  
+*e & i Elektrotechnik und Informationstechnik*, 141(3).  
+DOI: [10.1007/s00502-024-01230-z](https://doi.org/10.1007/s00502-024-01230-z)
+
+**Repository:**
 ```
 ElectrolyserLib (2026). Python library for PEM electrolyser modeling.
 https://github.com/moend95/electrolyserlib
