@@ -176,7 +176,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Author
 
-**Moritz End**  
+**Moritz End (M.Sc)**  
 University of Applied Sciences Cologne  
 Cologne Institute for Renewable Energy (CIRE)
 
@@ -201,7 +201,7 @@ If you use this library in your research, please cite:
 ```
 
 **Publication:**  
-End, M. (2024). Simulation einer effizienten Betriebsstrategie für systemdienliche PEM-Elektrolyse.  
+End, M. (2024). Simulation of an efficient operating strategy for system-supporting PEM electrolysis.  
 *e & i Elektrotechnik und Informationstechnik*, 141(3).  
 DOI: [10.1007/s00502-024-01230-z](https://doi.org/10.1007/s00502-024-01230-z)
 
