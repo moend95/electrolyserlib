@@ -67,6 +67,45 @@ print(results.head())
 # Output includes state transitions, power usage, and H2 production
 ```
 
+### Get Key Performance Indicators (KPIs)
+
+Both `Electrolyser` and `DynamicElectrolyser` provide statistics functions to analyze simulation results:
+
+```python
+from electrolyserlib import Electrolyser
+
+# Run simulation
+electrolyser = Electrolyser(nominal_power=1000)
+power_input = [800, 900, 1000, 950, 700, 600, 500] * 10  # 70 hours
+results = electrolyser.calc_h2(power_input, unit="kW", resolution="1h")
+
+# Calculate statistics
+stats = electrolyser.get_statistics(results, resolution="1h")
+
+print(f"Total H2 produced: {stats['total_h2_m3']:.2f} m³ ({stats['total_h2_kg']:.2f} kg)")
+print(f"Average efficiency: {stats['avg_efficiency_pct']:.2f} %")
+print(f"Full load hours: {stats['full_load_hours']:.2f} h")
+print(f"Operating hours: {stats['operating_hours']:.2f} h")
+print(f"Total energy used: {stats['total_energy_used_kwh']:.2f} kWh")
+print(f"Excess energy: {stats['total_excess_energy_kwh']:.2f} kWh")
+```
+
+**Available KPIs for `Electrolyser`:**
+- `total_h2_m3`: Total hydrogen produced [m³]
+- `total_h2_kg`: Total hydrogen produced [kg] (at 0°C, 1 bar: 0.08988 kg/m³)
+- `avg_efficiency_pct`: Average efficiency [%] (based on H2 LHV = 3.0 kWh/m³)
+- `full_load_hours`: Equivalent full load hours [h]
+- `operating_hours`: Operating hours when producing H2 [h]
+- `total_energy_used_kwh`: Total energy consumed [kWh]
+- `total_excess_energy_kwh`: Total excess energy (above nominal power) [kWh]
+- `energy_without_production_kwh`: Energy consumed during non-productive phases [kWh]
+
+**Additional KPIs for `DynamicElectrolyser`:**
+- `startup_energy_kwh`: Energy used during startup phases [kWh]
+- `standby_steps`: Number of time steps in warm standby mode
+- `cold_starts`: Number of cold starts
+- `warm_starts`: Number of warm starts
+
 ## Custom Efficiency Curve
 
 You can provide your own efficiency curve as a CSV file:
@@ -117,6 +156,9 @@ Electrolyser(csv_data=None, nominal_power=None)
 **Methods:**
 - `calc_h2(timeseries, unit="kW", resolution="1h")`: Calculate H2 production
   - Returns: DataFrame with columns `input_power_raw_kW`, `used_power_kW`, `excess_power_kW`, `h2_produced_m3`
+- `get_statistics(result_df, resolution="1h")`: Calculate key performance indicators
+  - `result_df`: DataFrame returned by `calc_h2()`
+  - Returns: Dictionary with KPIs (total H2 in m³ and kg, efficiency, operating hours, energy usage, etc.)
 
 ### `DynamicElectrolyser`
 
@@ -137,6 +179,9 @@ DynamicElectrolyser(
 **Methods:**
 - `simulate(timeseries, unit="kW", resolution="15min", look_ahead_min=120)`: Simulate with dynamic states
   - Returns: DataFrame with state information, power flows, and H2 production
+- `get_statistics(result_df, resolution="15min")`: Calculate key performance indicators for dynamic simulation
+  - `result_df`: DataFrame returned by `simulate()`
+  - Returns: Dictionary with KPIs including startup energy, state transitions, and cold/warm starts
 
 **States:**
 - `COLD`: Electrolyser is off and cold
