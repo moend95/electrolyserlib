@@ -10,14 +10,11 @@ and pumps.
 This model is used to generate efficiency curves for the electrolyserlib package.
 
 References:
-[1] End, M. (2024). Simulation einer effizienten Betriebsstrategie für 
-    systemdienliche PEM-Elektrolyse. e & i Elektrotechnik und Informationstechnik, 
-    141(3). DOI: 10.1007/s00502-024-01230-z
-[2] Tjarks, G. (2017). PEM-Elektrolyse-Systeme zur Anwendung in Power-to-Gas Anlagen. 
+[1] Tjarks, G. (2017). PEM-Elektrolyse-Systeme zur Anwendung in Power-to-Gas Anlagen. 
     Dissertation, RWTH Aachen, Forschungszentrum Jülich.
-[3] Olivier, P., Bourasseau, C., & Bouamama, B. (2017). Low-temperature electrolysis 
+[2] Olivier, P., Bourasseau, C., & Bouamama, B. (2017). Low-temperature electrolysis 
     system modelling: A review. Renewable and Sustainable Energy Reviews, 78, 280-300.
-[4] Springer, T.E., et al. (1991). Polymer electrolyte fuel cell model. 
+[3] Springer, T.E., et al. (1991). Polymer electrolyte fuel cell model. 
     Journal of the Electrochemical Society, 138(8), 2334-2342.
 
 Author: Moritz End
@@ -291,10 +288,9 @@ class PEMElectrolyser:
         
         References
         ----------
-        [1] End, M. (2024). DOI: 10.1007/s00502-024-01230-z - Model description
-        [2] Tjarks, G. (2017). FZ Jülich - Tafel equation parameters (Eq. 3.11)
-        [3] Olivier et al. (2017). Review - Butler-Volmer/Tafel kinetics
-        [4] Springer et al. (1991). Nafion conductivity model (Eq. 14)
+        [1] Tjarks, G. (2017). FZ Jülich - Tafel equation parameters (Eq. 3.11)
+        [2] Olivier et al. (2017). Review - Butler-Volmer/Tafel kinetics
+        [3] Springer et al. (1991). Nafion conductivity model (Eq. 14)
         
         Model validated against commercial PEM electrolyser specifications
         """
