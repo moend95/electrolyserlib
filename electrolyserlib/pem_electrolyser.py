@@ -168,6 +168,83 @@ class Electrolyser:
             'h2_produced_m3': h2_produced_m3
         })
     
+    def get_statistics(self, result_df, resolution="1h"):
+        """Calculate key performance indicators from simulation results.
+        
+        Args:
+            result_df: DataFrame returned by calc_h2() method
+            resolution: Time resolution used in simulation ("1min", "5min", "10min", "15min", "1h")
+            
+        Returns:
+            dict with the following keys:
+                - total_h2_m3: Total H2 produced [m³]
+                - total_h2_kg: Total H2 produced [kg] (at 0°C, 1 bar: 0.08988 kg/m³)
+                - avg_efficiency_pct: Average efficiency [%] (based on LHV = 3.0 kWh/m³)
+                - full_load_hours: Equivalent full load hours [h]
+                - operating_hours: Operating hours (when producing H2) [h]
+                - total_energy_used_kwh: Total energy consumed [kWh]
+                - total_excess_energy_kwh: Total excess energy [kWh]
+                - energy_without_production_kwh: Energy used without H2 production [kWh]
+                
+        Raises:
+            ValueError: If resolution is not supported or result_df is invalid
+        """
+        if resolution not in self.RESOLUTION_MAP:
+            raise ValueError(f"Unknown resolution '{resolution}'. Supported values: {list(self.RESOLUTION_MAP.keys())}")
+        
+        time_factor = self.RESOLUTION_MAP[resolution]
+        
+        # Required columns
+        required_cols = ['used_power_kW', 'excess_power_kW', 'h2_produced_m3']
+        for col in required_cols:
+            if col not in result_df.columns:
+                raise ValueError(f"Missing required column: {col}")
+        
+        # 1. Total H2 production
+        total_h2_m3 = result_df['h2_produced_m3'].sum()
+        # Conversion: 1 m³ H2 (at 0°C, 1 bar) = 0.08988 kg
+        total_h2_kg = total_h2_m3 * 0.08988
+        
+        # 2. Total energy
+        total_energy_used_kwh = (result_df['used_power_kW'] * time_factor).sum()
+        total_excess_energy_kwh = (result_df['excess_power_kW'] * time_factor).sum()
+        
+        # 3. Average efficiency
+        # LHV (Lower Heating Value) of H2: ~3.0 kWh/m³
+        LHV_H2 = 3.0  # kWh/m³
+        theoretical_energy_kwh = total_h2_m3 * LHV_H2
+        
+        if total_energy_used_kwh > 0:
+            avg_efficiency_pct = (theoretical_energy_kwh / total_energy_used_kwh) * 100
+        else:
+            avg_efficiency_pct = 0.0
+        
+        # 4. Full load hours
+        if self.nominal_power > 0:
+            full_load_hours = total_energy_used_kwh / self.nominal_power
+        else:
+            full_load_hours = 0.0
+        
+        # 5. Operating hours (when producing H2)
+        operating_steps = (result_df['h2_produced_m3'] > 0).sum()
+        operating_hours = operating_steps * time_factor
+        
+        # 6. Energy without production (used power but no H2 output)
+        # This happens during startup, heat-up, or below minimum load
+        mask_no_production = (result_df['used_power_kW'] > 0) & (result_df['h2_produced_m3'] == 0)
+        energy_without_production_kwh = (result_df.loc[mask_no_production, 'used_power_kW'] * time_factor).sum()
+        
+        return {
+            'total_h2_m3': round(total_h2_m3, 2),
+            'total_h2_kg': round(total_h2_kg, 2),
+            'avg_efficiency_pct': round(avg_efficiency_pct, 2),
+            'full_load_hours': round(full_load_hours, 2),
+            'operating_hours': round(operating_hours, 2),
+            'total_energy_used_kwh': round(total_energy_used_kwh, 2),
+            'total_excess_energy_kwh': round(total_excess_energy_kwh, 2),
+            'energy_without_production_kwh': round(energy_without_production_kwh, 2)
+        }
+    
 class DynamicElectrolyser(Electrolyser):
     """Electrolyser with dynamic startup/standby characteristics."""
     
@@ -370,3 +447,99 @@ class DynamicElectrolyser(Electrolyser):
             })
         
         return pd.DataFrame(results)
+    
+    def get_statistics(self, result_df, resolution="15min"):
+        """Calculate key performance indicators from dynamic simulation results.
+        
+        Args:
+            result_df: DataFrame returned by simulate() method
+            resolution: Time resolution used in simulation ("1min", "5min", "10min", "15min", "1h")
+            
+        Returns:
+            dict with the following keys:
+                - total_h2_m3: Total H2 produced [m³]
+                - total_h2_kg: Total H2 produced [kg] (at 0°C, 1 bar: 0.08988 kg/m³)
+                - avg_efficiency_pct: Average efficiency [%] (based on LHV = 3.0 kWh/m³)
+                - full_load_hours: Equivalent full load hours [h]
+                - operating_hours: Operating hours (when producing H2) [h]
+                - total_energy_used_kwh: Total energy consumed [kWh]
+                - total_excess_energy_kwh: Total excess energy [kWh]
+                - startup_energy_kwh: Energy used during startup phases [kWh]
+                - standby_steps: Number of time steps in warm standby mode
+                - cold_starts: Number of cold starts
+                - warm_starts: Number of warm starts
+                
+        Raises:
+            ValueError: If resolution is not supported or result_df is invalid
+        """
+        res_min = self._get_resolution_min(resolution)
+        time_factor = res_min / 60  # for energy calculation in kWh
+        
+        # Required columns
+        required_cols = ['p_used_kW', 'p_excess_kW', 'h2_produced_m3', 'state']
+        for col in required_cols:
+            if col not in result_df.columns:
+                raise ValueError(f"Missing required column: {col}")
+        
+        # 1. Total H2 production
+        total_h2_m3 = result_df['h2_produced_m3'].sum()
+        # Conversion: 1 m³ H2 (at 0°C, 1 bar) = 0.08988 kg
+        total_h2_kg = total_h2_m3 * 0.08988
+        
+        # 2. Total energy
+        total_energy_used_kwh = (result_df['p_used_kW'] * time_factor).sum()
+        total_excess_energy_kwh = (result_df['p_excess_kW'] * time_factor).sum()
+        
+        # 3. Average efficiency
+        # LHV (Lower Heating Value) of H2: ~3.0 kWh/m³
+        LHV_H2 = 3.0  # kWh/m³
+        theoretical_energy_kwh = total_h2_m3 * LHV_H2
+        
+        if total_energy_used_kwh > 0:
+            avg_efficiency_pct = (theoretical_energy_kwh / total_energy_used_kwh) * 100
+        else:
+            avg_efficiency_pct = 0.0
+        
+        # 4. Full load hours
+        if self.nominal_power > 0:
+            full_load_hours = total_energy_used_kwh / self.nominal_power
+        else:
+            full_load_hours = 0.0
+        
+        # 5. Operating hours (when producing H2)
+        operating_steps = (result_df['h2_produced_m3'] > 0).sum()
+        operating_hours = operating_steps * time_factor
+        
+        # 6. Energy during startup
+        startup_energy_kwh = (result_df[result_df['state'] == self.STATE_STARTUP]['p_used_kW'] * time_factor).sum()
+        
+        # 7. Standby statistics
+        standby_steps = (result_df['state'] == self.STATE_WARM_STANDBY).sum()
+        
+        # 8. Count state transitions (cold/warm starts)
+        cold_starts = 0
+        warm_starts = 0
+        
+        # Detect transitions from COLD/WARM_STANDBY to STARTUP
+        for i in range(1, len(result_df)):
+            prev_state = result_df.iloc[i-1]['state']
+            curr_state = result_df.iloc[i]['state']
+            
+            if curr_state == self.STATE_STARTUP and prev_state == self.STATE_COLD:
+                cold_starts += 1
+            elif curr_state == self.STATE_STARTUP and prev_state == self.STATE_WARM_STANDBY:
+                warm_starts += 1
+        
+        return {
+            'total_h2_m3': round(total_h2_m3, 2),
+            'total_h2_kg': round(total_h2_kg, 2),
+            'avg_efficiency_pct': round(avg_efficiency_pct, 2),
+            'full_load_hours': round(full_load_hours, 2),
+            'operating_hours': round(operating_hours, 2),
+            'total_energy_used_kwh': round(total_energy_used_kwh, 2),
+            'total_excess_energy_kwh': round(total_excess_energy_kwh, 2),
+            'startup_energy_kwh': round(startup_energy_kwh, 2),
+            'standby_steps': int(standby_steps),
+            'cold_starts': int(cold_starts),
+            'warm_starts': int(warm_starts)
+        }
